@@ -23,6 +23,7 @@
   patchelf,
   symlinkJoin,
   runCommand,
+  makeWrapper,
   alsa-lib,
   avahi,
   cairo,
@@ -217,6 +218,14 @@ let
   };
 });
 
+  # VLC 4 no longer loads the D-Bus control interface by default, so without
+  # this there is no MPRIS service: KDE's media keys (and playerctl, KDE
+  # Connect, etc.) have nothing to talk to. Wrapping outside the compiled
+  # derivation keeps this a no-recompile change.
+  wrapped = runCommand "vlc-redesign-wrapped" { nativeBuildInputs = [ makeWrapper ]; } ''
+    makeWrapper ${vlc}/bin/vlc $out/bin/vlc --add-flags "--control=dbus"
+  '';
+
   # The meson install ships no desktop entry or icons (the autotools build did),
   # so the app has no launcher/dock icon. Kept outside the compiled derivation so
   # tweaking it never triggers a recompile.
@@ -224,7 +233,7 @@ let
     mimetypes="$(sed 's/\s*#.*$//g' ${vlc.src}/share/vlc.desktop.mimetypes | grep -v '^$' | tr '\n' ';')"
     mkdir -p $out/share/applications
     # VLC 4 dropped --started-from-file; passing it makes vlc exit with "Unknown option".
-    sed -e "s,@bindir@,${vlc}/bin,g" -e "s,@MIMETYPES@,$mimetypes,g" \
+    sed -e "s,@bindir@,${wrapped}/bin,g" -e "s,@MIMETYPES@,$mimetypes,g" \
       -e 's, --started-from-file,,' \
       ${vlc.src}/share/vlc.desktop.in > $out/share/applications/vlc.desktop
     for sz in 16x16 32x32 48x48 128x128 256x256; do
@@ -238,5 +247,5 @@ in
 symlinkJoin {
   inherit (vlc) pname version meta;
   name = "${vlc.pname}-${vlc.version}";
-  paths = [ vlc desktop ];
+  paths = [ wrapped vlc desktop ];
 }

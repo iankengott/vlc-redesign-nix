@@ -51,6 +51,7 @@ Things I checked on one machine and can't promise elsewhere.
 - **Chromecast is off.** The plugin needs C++20 for its protobuf and abseil headers, and VLC builds as C++17. Casting won't work.
 - **`mesonAutoFeatures = "auto"`.** nixpkgs defaults meson to requiring every optional feature, which fails on options like AArch64 branch protection.
 - **A RUNPATH patch for the X11 video plugins.** Without it they can't find `libvlc_xcb_events.so` and fail to load.
+- **`--control=dbus` is passed on every launch.** VLC 4 doesn't load its D-Bus control interface by default, so VLC 3's MPRIS service silently disappears. Without it, media keys on KDE and GNOME (and `playerctl`, KDE Connect and the media widget) can't see the player. A small wrapper outside the compiled derivation adds the flag, so changing it doesn't trigger a recompile. If you'd rather set it yourself, put `control=dbus` in `~/.config/vlc/vlcrc`.
 - **A desktop entry and icons.** The meson install doesn't ship them. They're generated from the fork's own files in a separate derivation, so editing them doesn't trigger a recompile. The entry drops `--started-from-file`, which VLC 4 removed and which otherwise makes the launcher entry exit without opening anything.
 
 ## Updating
